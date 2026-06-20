@@ -1,56 +1,71 @@
-const { Resend } = require("resend");
+const EMAILJS_SEND_URL = "https://api.emailjs.com/api/v1.0/email/send";
 
-const getResendClient = () => {
-  if (!process.env.RESEND_API_KEY) {
-    throw new Error("RESEND_API_KEY is not configured");
+const requireEnv = (name) => {
+  const value = process.env[name]?.trim();
+
+  if (!value) {
+    throw new Error(`${name} is not configured`);
   }
 
-  return new Resend(process.env.RESEND_API_KEY);
+  return value;
 };
 
 const sendEmail = async (to, subject, otp) => {
-  const from =
-    process.env.RESEND_FROM_EMAIL ||
-    "HireMind <onboarding@resend.dev>";
+  const serviceId = requireEnv("EMAILJS_SERVICE_ID");
+  const templateId = requireEnv("EMAILJS_TEMPLATE_ID");
+  const publicKey = requireEnv("EMAILJS_PUBLIC_KEY");
+  const privateKey = process.env.EMAILJS_PRIVATE_KEY?.trim();
 
-  const html = `
-    <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto;padding:20px;color:#0f172a">
-      <h2 style="color:#2563eb">HireMind</h2>
-      <p>We received a password reset request.</p>
-      <h1 style="background:#f3f4f6;padding:15px;text-align:center;letter-spacing:5px">
-        ${otp}
-      </h1>
-      <p>This OTP will expire in 10 minutes.</p>
-      <p>If you didn't request this, you can ignore this email.</p>
-      <hr>
-      <small>HireMind Team</small>
-    </div>
-  `;
-
-  const sendRequest = getResendClient().emails.send({
-    from,
-    to: [to],
+  const templateParams = {
+    to_email: to,
+    user_email: to,
+    email: to,
     subject,
-    html,
-  });
+    otp,
+    passcode: otp,
+    app_name: "HireMind",
+    expiry_minutes: "10",
+  };
 
-  const timeout = new Promise((_, reject) => {
-    setTimeout(
-      () => reject(new Error("Email service timed out")),
-      15000
-    );
-  });
+  const payload = {
+    service_id: serviceId,
+    template_id: templateId,
+    user_id: publicKey,
+    template_params: templateParams,
+  };
 
-  const { data, error } = await Promise.race([
-    sendRequest,
-    timeout,
-  ]);
-
-  if (error) {
-    throw new Error(error.message || "Resend failed to send email");
+  if (privateKey) {
+    payload.accessToken = privateKey;
   }
 
-  return data;
+  const response = await fetch(EMAILJS_SEND_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    console.error("EmailJS send failed:", {
+      status: response.status,
+      response: responseText,
+      serviceId,
+      templateId,
+      to,
+      hasPublicKey: Boolean(publicKey),
+      hasPrivateKey: Boolean(privateKey),
+    });
+
+    throw new Error(responseText || "EmailJS failed to send email");
+  }
+
+  return {
+    status: response.status,
+    text: responseText,
+  };
 };
 
 module.exports = {
