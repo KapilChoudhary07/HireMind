@@ -228,6 +228,11 @@ exports.forgotPassword =
           "OTP sent successfully",
       });
     } catch (error) {
+      console.error("Forgot password email failed:", {
+        message: error.message,
+        email: user?.email,
+      });
+
       if (user) {
         user.resetOtp = null;
         user.resetOtpExpire = null;
