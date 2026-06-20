@@ -188,12 +188,12 @@ exports.updateProfile = async (
 
 exports.forgotPassword =
   async (req, res) => {
-    try {
-      const { email } =
-        req.body;
+    let user;
 
-      const user =
-        await User.findOne({
+    try {
+      const email = req.body.email?.trim().toLowerCase();
+
+      user = await User.findOne({
           email,
         });
 
@@ -228,10 +228,15 @@ exports.forgotPassword =
           "OTP sent successfully",
       });
     } catch (error) {
+      if (user) {
+        user.resetOtp = null;
+        user.resetOtpExpire = null;
+        await user.save().catch(() => {});
+      }
+
       res.status(500).json({
         success: false,
-        message:
-          error.message,
+        message: "Email service is temporarily unavailable. Please try again.",
       });
     }
   };

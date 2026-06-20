@@ -36,6 +36,8 @@ const ForgotPassword = () => {
   };
 
   const handleForgotPassword = async () => {
+    if (loading) return;
+
     setError("");
     if (!email) { setError("Please enter your email address."); return; }
     setLoading(true);
@@ -44,7 +46,11 @@ const ForgotPassword = () => {
       setSuccess(data.message || "OTP sent to your email!");
       setStep(2);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to send OTP. Try again.");
+      setError(
+        err.code === "ECONNABORTED"
+          ? "Email service took too long to respond. Please try again."
+          : err.response?.data?.message || "Failed to send OTP. Try again."
+      );
     } finally { setLoading(false); }
   };
 
