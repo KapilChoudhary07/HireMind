@@ -1,13 +1,19 @@
-const fs = require("fs");
 const pdfParse = require("pdf-parse");
 
-const extractTextFromPDF = async (filePath) => {
-  const dataBuffer =
-    fs.readFileSync(filePath);
+// Buffer directly accept karta hai — disk file ki zaroorat nahi
+const extractTextFromPDF = async (bufferOrPath) => {
+  let dataBuffer;
 
-  const pdfData =
-    await pdfParse(dataBuffer);
+  if (Buffer.isBuffer(bufferOrPath)) {
+    // memoryStorage se aaya buffer
+    dataBuffer = bufferOrPath;
+  } else {
+    // fallback: local dev mein file path se
+    const fs = require("fs");
+    dataBuffer = fs.readFileSync(bufferOrPath);
+  }
 
+  const pdfData = await pdfParse(dataBuffer);
   return pdfData.text;
 };
 

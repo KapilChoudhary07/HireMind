@@ -153,18 +153,46 @@ exports.updateProfile = async (
       linkedin,
     } = req.body;
 
+    const cleanEducation = Array.isArray(education)
+      ? education
+          .map((item) => ({
+            college: item.college?.trim(),
+            degree: item.degree?.trim(),
+            year: item.year?.trim(),
+          }))
+          .filter((item) => item.college && item.degree && item.year)
+      : undefined;
+
+    const cleanExperience = Array.isArray(experience)
+      ? experience
+          .map((item) => ({
+            company: item.company?.trim(),
+            role: item.role?.trim(),
+            duration: item.duration?.trim(),
+          }))
+          .filter((item) => item.company && item.role && item.duration)
+      : undefined;
+
+    const updateData = {
+      name,
+      bio,
+      skills,
+      github,
+      linkedin,
+    };
+
+    if (Array.isArray(education)) {
+      updateData.education = cleanEducation;
+    }
+
+    if (Array.isArray(experience)) {
+      updateData.experience = cleanExperience;
+    }
+
     const user =
       await User.findByIdAndUpdate(
   req.user._id,
-  {
-    name,
-    bio,
-    skills,
-    education,
-    experience,
-    github,
-    linkedin,
-  },
+  updateData,
   {
     new: true,
   }

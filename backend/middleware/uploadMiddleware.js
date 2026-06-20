@@ -1,18 +1,9 @@
 const multer = require("multer");
 const path = require("path");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/resumes");
-  },
-
-  filename: (req, file, cb) => {
-    cb(
-      null,
-      `${Date.now()}-${file.originalname}`
-    );
-  },
-});
+// memoryStorage use karo — Vercel ka filesystem read-only hai
+// disk pe save karne ki zaroorat nahi
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = [".pdf"];
@@ -35,7 +26,7 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    fileSize: 5 * 1024 * 1024, // 5MB
   },
 });
 

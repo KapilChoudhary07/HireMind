@@ -66,6 +66,7 @@ const sendEmail = async (to, subject, otp) => {
     service_id: serviceId,
     template_id: templateId,
     user_id: publicKey,
+    accessToken: privateKey,   // Required for server-side calls
     template_params: {
       to_email: to,
       user_email: to,
@@ -78,11 +79,21 @@ const sendEmail = async (to, subject, otp) => {
     },
   };
 
-  if (privateKey) {
-    payload.accessToken = privateKey;
-  }
+  console.log("📧 EmailJS Request:", {
+    service_id: serviceId,
+    template_id: templateId,
+    hasPublicKey: Boolean(publicKey),
+    hasPrivateKey: Boolean(privateKey),
+    to_email: to,
+    otp_sent: otp,
+  });
 
   const response = await postJson(payload);
+
+  console.log("📬 EmailJS Response:", {
+    statusCode: response.statusCode,
+    body: response.body,
+  });
 
   if (response.statusCode < 200 || response.statusCode >= 300) {
     const error = new Error(
@@ -91,19 +102,15 @@ const sendEmail = async (to, subject, otp) => {
     error.statusCode = response.statusCode;
     error.isEmailProviderError = true;
 
-    console.error("EmailJS send failed:", {
+    console.error("❌ EmailJS send failed:", {
       statusCode: response.statusCode,
       response: response.body,
-      serviceId,
-      templateId,
-      to,
-      hasPublicKey: Boolean(publicKey),
-      hasPrivateKey: Boolean(privateKey),
     });
 
     throw error;
   }
 
+  console.log("✅ EmailJS email sent successfully to:", to);
   return response;
 };
 

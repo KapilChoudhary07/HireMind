@@ -1,6 +1,5 @@
 const Resume = require("../models/Resume");
 const User = require("../models/User");
-const fs = require("fs");
 
 const {
   extractTextFromPDF,
@@ -9,6 +8,7 @@ const {
 const {
   analyzeResume,
 } = require("../services/geminiService");
+
 exports.uploadResume = async (req, res) => {
   try {
     if (!req.file) {
@@ -18,10 +18,8 @@ exports.uploadResume = async (req, res) => {
       });
     }
 
-    const extractedText =
-      await extractTextFromPDF(
-        req.file.path
-      );
+    // memoryStorage se buffer aata hai — path nahi
+    const extractedText = await extractTextFromPDF(req.file.buffer);
 
     const aiResult = await analyzeResume(extractedText);
 
@@ -29,7 +27,6 @@ exports.uploadResume = async (req, res) => {
     try {
       parsedAnalysis = JSON.parse(aiResult);
     } catch (e) {
-      // Attempt to extract JSON block from AI output (handles code fences or extra text)
       const match = aiResult && aiResult.match(/{[\s\S]*}/);
       if (match) {
         try {
@@ -42,23 +39,16 @@ exports.uploadResume = async (req, res) => {
       }
     }
 
-    const resume =
-      await Resume.create({
-        user: req.user._id,
+    const resume = await Resume.create({
+      user: req.user._id,
+      fileName: req.file.originalname,
+      // Vercel pe disk nahi hoti — originalname store karo
+      filePath: req.file.originalname,
+      extractedText,
+      analysis: parsedAnalysis,
+    });
 
-        fileName:
-          req.file.filename,
-
-        filePath:
-          req.file.path,
-
-        extractedText,
-
-        analysis:
-          parsedAnalysis,
-      });
-
-    // Auto-fill user profile details if they were parsed
+    // Auto-fill user profile from resume
     if (parsedAnalysis && parsedAnalysis.profile) {
       try {
         const user = await User.findById(req.user._id);
@@ -104,11 +94,11 @@ exports.uploadResume = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message:
-        error.message,
+      message: error.message,
     });
   }
 };
+
 exports.getMyResume = async (req, res) => {
   try {
     const resumes = await Resume.find({
@@ -128,80 +118,61 @@ exports.getMyResume = async (req, res) => {
   }
 };
 
+exports.getResumeById = async (req, res) => {
+  try {
+    const query = { _id: req.params.id };
+    if (req.user.role !== "admin") {
+      query.user = req.user._id;
+    }
 
-exports.getResumeById =
-  async (req, res) => {
-    try {
-      const query = { _id: req.params.id };
-      if (req.user.role !== "admin") {
-        query.user = req.user._id;
-      }
+    const resume = await Resume.findOne(query);
 
-      const resume =
-        await Resume.findOne(query);
-
-      if (!resume) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Resume not found",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        resume,
-      });
-    } catch (error) {
-      res.status(500).json({
+    if (!resume) {
+      return res.status(404).json({
         success: false,
-        message:
-          error.message,
+        message: "Resume not found",
       });
     }
-  };
-exports.deleteResume =
-  async (req, res) => {
-    try {
-      const query = { _id: req.params.id };
-      if (req.user.role !== "admin") {
-        query.user = req.user._id;
-      }
 
-      const resume =
-        await Resume.findOne(query);
+    res.status(200).json({
+      success: true,
+      resume,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 
-      if (!resume) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "Resume not found",
-        });
-      }
+exports.deleteResume = async (req, res) => {
+  try {
+    const query = { _id: req.params.id };
+    if (req.user.role !== "admin") {
+      query.user = req.user._id;
+    }
 
-      if (
-        resume.filePath &&
-        fs.existsSync(
-          resume.filePath
-        )
-      ) {
-        fs.unlinkSync(
-          resume.filePath
-        );
-      }
+    const resume = await Resume.findOne(query);
 
-      await resume.deleteOne();
-
-      res.status(200).json({
-        success: true,
-        message:
-          "Resume deleted successfully",
-      });
-    } catch (error) {
-      res.status(500).json({
+    if (!resume) {
+      return res.status(404).json({
         success: false,
-        message:
-          error.message,
+        message: "Resume not found",
       });
     }
-  };
+
+    // Disk pe file nahi hoti (Vercel) — sirf DB se delete karo
+    await resume.deleteOne();
+
+    res.status(200).json({
+      success: true,
+      message: "Resume deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

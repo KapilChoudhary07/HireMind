@@ -172,25 +172,32 @@ const Profile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const education = formData.college && formData.degree && formData.year
+        ? [
+            {
+              college: formData.college,
+              degree: formData.degree,
+              year: formData.year,
+            },
+          ]
+        : [];
+      const experience = formData.company && formData.role && formData.duration
+        ? [
+            {
+              company: formData.company,
+              role: formData.role,
+              duration: formData.duration,
+            },
+          ]
+        : [];
+
       await api.put("/auth/update-profile", {
         bio: formData.bio,
         github: formData.github,
         linkedin: formData.linkedin,
         skills: formData.skills,
-        education: [
-          {
-            college: formData.college,
-            degree: formData.degree,
-            year: formData.year,
-          },
-        ],
-        experience: [
-          {
-            company: formData.company,
-            role: formData.role,
-            duration: formData.duration,
-          },
-        ],
+        education,
+        experience,
       });
       showToast("Profile updated successfully!");
       setEditMode(false);
@@ -198,20 +205,8 @@ const Profile = () => {
         ...prev,
         ...formData,
         skills: formData.skills,
-        education: [
-          {
-            college: formData.college,
-            degree: formData.degree,
-            year: formData.year,
-          },
-        ],
-        experience: [
-          {
-            company: formData.company,
-            role: formData.role,
-            duration: formData.duration,
-          },
-        ],
+        education,
+        experience,
       }));
     } catch {
       showToast("Failed to save. Please try again.", "error");
