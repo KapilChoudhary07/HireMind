@@ -47,8 +47,17 @@ function RegisterPage() {
     navigate(data.token ? "/dashboard" : "/login", { replace: true });
 
   } catch (err) {
-    const msg = err?.response?.data?.message || err?.response?.data?.error || "Registration failed. Try a different email.";
-    setError(msg);
+    let msg = err?.response?.data?.message || err?.response?.data?.error;
+
+    if (!msg && err?.code === "ERR_API_URL_MISSING") {
+      msg = "Registration service is not configured. Please set VITE_API_URL in the frontend deployment.";
+    } else if (!msg && err?.code === "ECONNABORTED") {
+      msg = "The registration server took too long to respond. Please try again.";
+    } else if (!msg && !err?.response) {
+      msg = "Could not reach the registration server. Please check the deployed API URL and CORS settings.";
+    }
+
+    setError(msg || "Registration failed. Please try again.");
   } finally {
     setLoading(false);
   }
