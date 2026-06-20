@@ -1,13 +1,59 @@
-const EMAILJS_SEND_URL = "https://api.emailjs.com/api/v1.0/email/send";
+const https = require("https");
+
+const EMAILJS_HOST = "api.emailjs.com";
+const EMAILJS_PATH = "/api/v1.0/email/send";
 
 const requireEnv = (name) => {
   const value = process.env[name]?.trim();
 
   if (!value) {
-    throw new Error(`${name} is not configured`);
+    const error = new Error(`${name} is not configured`);
+    error.statusCode = 500;
+    error.isEmailConfigError = true;
+    throw error;
   }
 
   return value;
+};
+
+const postJson = (payload) => {
+  const body = JSON.stringify(payload);
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      {
+        hostname: EMAILJS_HOST,
+        path: EMAILJS_PATH,
+        method: "POST",
+        timeout: 15000,
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        let data = "";
+
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+        res.on("end", () => {
+          resolve({
+            statusCode: res.statusCode,
+            body: data,
+          });
+        });
+      }
+    );
+
+    req.on("timeout", () => {
+      req.destroy(new Error("EmailJS request timed out"));
+    });
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
 };
 
 const sendEmail = async (to, subject, otp) => {
@@ -16,42 +62,38 @@ const sendEmail = async (to, subject, otp) => {
   const publicKey = requireEnv("EMAILJS_PUBLIC_KEY");
   const privateKey = process.env.EMAILJS_PRIVATE_KEY?.trim();
 
-  const templateParams = {
-    to_email: to,
-    user_email: to,
-    email: to,
-    subject,
-    otp,
-    passcode: otp,
-    app_name: "HireMind",
-    expiry_minutes: "10",
-  };
-
   const payload = {
     service_id: serviceId,
     template_id: templateId,
     user_id: publicKey,
-    template_params: templateParams,
+    template_params: {
+      to_email: to,
+      user_email: to,
+      email: to,
+      subject,
+      otp,
+      passcode: otp,
+      app_name: "HireMind",
+      expiry_minutes: "10",
+    },
   };
 
   if (privateKey) {
     payload.accessToken = privateKey;
   }
 
-  const response = await fetch(EMAILJS_SEND_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const response = await postJson(payload);
 
-  const responseText = await response.text();
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    const error = new Error(
+      `EmailJS ${response.statusCode}: ${response.body || "Email send failed"}`
+    );
+    error.statusCode = response.statusCode;
+    error.isEmailProviderError = true;
 
-  if (!response.ok) {
     console.error("EmailJS send failed:", {
-      status: response.status,
-      response: responseText,
+      statusCode: response.statusCode,
+      response: response.body,
       serviceId,
       templateId,
       to,
@@ -59,13 +101,10 @@ const sendEmail = async (to, subject, otp) => {
       hasPrivateKey: Boolean(privateKey),
     });
 
-    throw new Error(responseText || "EmailJS failed to send email");
+    throw error;
   }
 
-  return {
-    status: response.status,
-    text: responseText,
-  };
+  return response;
 };
 
 module.exports = {

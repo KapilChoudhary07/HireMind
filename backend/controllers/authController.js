@@ -230,6 +230,7 @@ exports.forgotPassword =
     } catch (error) {
       console.error("Forgot password email failed:", {
         message: error.message,
+        stack: error.stack,
         email: user?.email,
       });
 
@@ -241,7 +242,9 @@ exports.forgotPassword =
 
       res.status(500).json({
         success: false,
-        message: "Email service is temporarily unavailable. Please try again.",
+        message: error.isEmailConfigError || error.isEmailProviderError
+          ? error.message
+          : "Email service is temporarily unavailable. Please try again.",
       });
     }
   };
