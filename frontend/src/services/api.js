@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getToken } from "../utils/auth";
 
-const productionApiUrl = "http://localhost:5000/api";
+const productionApiUrl = "https://hiremind-clvo.onrender.com/api";
 const configuredApiUrl = import.meta.env.VITE_API_URL?.trim().replace(/\/+$/, "");
 
 const getApiUrl = () => {
