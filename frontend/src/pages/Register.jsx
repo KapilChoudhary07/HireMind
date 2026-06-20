@@ -3,7 +3,6 @@
 
 import { Link, useNavigate } from "react-router-dom";
 import api from "../services/api"
-import { saveToken } from "../utils/auth";
 import { useState } from "react";
 import {
   Eye, EyeOff, Mail, Lock, Loader2, Sparkles, ArrowRight, User, ShieldCheck,
@@ -35,16 +34,20 @@ function RegisterPage() {
 
   setLoading(true);
   try {
-    const { data } = await api.post("/auth/register", {
+    await api.post("/auth/register", {
       name:     formData.name,
       email:    formData.email,
       password: formData.password,
     });
 
-    if (data.token) saveToken(data.token);
-
     // ✅ Register hone ke baad login page pe aao
-    navigate(data.token ? "/dashboard" : "/login", { replace: true });
+    navigate("/login", {
+      replace: true,
+      state: {
+        message: "Registration successful. Please log in.",
+        email: formData.email.trim(),
+      },
+    });
 
   } catch (err) {
     let msg = err?.response?.data?.message || err?.response?.data?.error;

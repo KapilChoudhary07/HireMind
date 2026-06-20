@@ -1,7 +1,7 @@
 
 
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Eye,
   EyeOff,
@@ -16,7 +16,12 @@ import { saveToken } from "../utils/auth";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const location = useLocation();
+  const [formData, setFormData] = useState({
+    email: location.state?.email || "",
+    password: "",
+  });
+  const successMessage = location.state?.message;
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -218,6 +223,16 @@ const Login = () => {
                   />
                   Remember me on this device
                 </label>
+
+                {successMessage && !error && (
+                  <div
+                    role="status"
+                    className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300"
+                    style={{ animation: "fadeIn 0.2s ease-out" }}
+                  >
+                    {successMessage}
+                  </div>
+                )}
 
                 {/* Error */}
                 {error && (
