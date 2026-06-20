@@ -216,6 +216,14 @@ exports.forgotPassword =
 
       await user.save();
 
+      console.log("Forgot password email send attempt:", {
+        email: user.email,
+        hasEmailjsServiceId: Boolean(process.env.EMAILJS_SERVICE_ID?.trim()),
+        hasEmailjsTemplateId: Boolean(process.env.EMAILJS_TEMPLATE_ID?.trim()),
+        hasEmailjsPublicKey: Boolean(process.env.EMAILJS_PUBLIC_KEY?.trim()),
+        hasEmailjsPrivateKey: Boolean(process.env.EMAILJS_PRIVATE_KEY?.trim()),
+      });
+
       await sendEmail(
         user.email,
         "HireMind Password Reset OTP",
@@ -242,9 +250,7 @@ exports.forgotPassword =
 
       res.status(500).json({
         success: false,
-        message: error.isEmailConfigError || error.isEmailProviderError
-          ? error.message
-          : "Email service is temporarily unavailable. Please try again.",
+        message: error.message || "Email service is temporarily unavailable. Please try again.",
       });
     }
   };
