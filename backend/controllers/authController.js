@@ -25,12 +25,14 @@ const generateOTP = () => {
   ).toString();
 };
 
+const normalizeEmail = (email) => email?.trim().toLowerCase();
+
 
 // Register
 exports.registerUser = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    const normalizedEmail = email?.trim().toLowerCase();
+    const normalizedEmail = normalizeEmail(email);
 
     if (!name?.trim() || !normalizedEmail || !password) {
       return res.status(400).json({
@@ -83,9 +85,10 @@ exports.registerUser = async (req, res) => {
 exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
     const user = await User.findOne({
-      email,
+      email: normalizedEmail,
     }).select("+password");
 
     if (!user) {
@@ -219,7 +222,14 @@ exports.forgotPassword =
     let user;
 
     try {
-      const email = req.body.email?.trim().toLowerCase();
+      const email = normalizeEmail(req.body.email);
+
+      if (!email) {
+        return res.status(400).json({
+          success: false,
+          message: "Email is required",
+        });
+      }
 
       user = await User.findOne({
           email,
@@ -294,10 +304,11 @@ exports.resetPassword = async (
       otp,
       newPassword,
     } = req.body;
+    const normalizedEmail = normalizeEmail(email);
 
     const user =
       await User.findOne({
-        email,
+        email: normalizedEmail,
       });
 
     if (!user) {
@@ -386,10 +397,11 @@ exports.verifyOTP = async (
   try {
     const { email, otp } =
       req.body;
+    const normalizedEmail = normalizeEmail(email);
 
     const user =
       await User.findOne({
-        email,
+        email: normalizedEmail,
       });
 
     if (!user) {

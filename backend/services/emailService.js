@@ -28,6 +28,7 @@ const postJson = (payload) => {
         timeout: 15000,
         headers: {
           "Content-Type": "application/json",
+          Accept: "application/json",
           "Content-Length": Buffer.byteLength(body),
         },
       },
@@ -66,31 +67,41 @@ const sendEmail = async (to, subject, otp) => {
     service_id: serviceId,
     template_id: templateId,
     user_id: publicKey,
-    accessToken: privateKey,   // Required for server-side calls
     template_params: {
+      to_name: to.split("@")[0],
       to_email: to,
       user_email: to,
       email: to,
+      reply_to: to,
+      from_name: "HireMind",
+      name: to.split("@")[0],
       subject,
+      title: subject,
       otp,
+      code: otp,
+      reset_otp: otp,
       passcode: otp,
+      message: `Your HireMind password reset OTP is ${otp}. It expires in 10 minutes.`,
       app_name: "HireMind",
       expiry_minutes: "10",
     },
   };
 
-  console.log("📧 EmailJS Request:", {
+  if (privateKey) {
+    payload.accessToken = privateKey;
+  }
+
+  console.log("EmailJS Request:", {
     service_id: serviceId,
     template_id: templateId,
     hasPublicKey: Boolean(publicKey),
     hasPrivateKey: Boolean(privateKey),
     to_email: to,
-    otp_sent: otp,
   });
 
   const response = await postJson(payload);
 
-  console.log("📬 EmailJS Response:", {
+  console.log("EmailJS Response:", {
     statusCode: response.statusCode,
     body: response.body,
   });
@@ -102,7 +113,7 @@ const sendEmail = async (to, subject, otp) => {
     error.statusCode = response.statusCode;
     error.isEmailProviderError = true;
 
-    console.error("❌ EmailJS send failed:", {
+    console.error("EmailJS send failed:", {
       statusCode: response.statusCode,
       response: response.body,
     });
@@ -110,7 +121,7 @@ const sendEmail = async (to, subject, otp) => {
     throw error;
   }
 
-  console.log("✅ EmailJS email sent successfully to:", to);
+  console.log("EmailJS email sent successfully to:", to);
   return response;
 };
 

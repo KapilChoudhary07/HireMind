@@ -39,10 +39,12 @@ const ForgotPassword = () => {
     if (loading) return;
 
     setError("");
-    if (!email) { setError("Please enter your email address."); return; }
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) { setError("Please enter your email address."); return; }
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/forgot-password", { email });
+      const { data } = await api.post("/auth/forgot-password", { email: normalizedEmail });
+      setEmail(normalizedEmail);
       setSuccess(data.message || "OTP sent to your email!");
       setStep(2);
     } catch (err) {
