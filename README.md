@@ -46,6 +46,11 @@ HireMind is a cutting-edge web application designed to help job seekers supercha
 *   **SDK**: [@google/genai](https://www.npmjs.com/package/@google/genai)
 
 ---
+## 👨‍💻 Author
+- **Developer:** Kapil Choudhary
+- **Email:** [kapilchoudhary9171@gmail.com](mailto:kapilchoudhary9171@gmail.com)
+- **GitHub:** [@KapilChoudhary07](https://github.com/KapilChoudhary07)
+---
 
 ## 📂 Folder Structure
 ```text
@@ -72,3 +77,5 @@ HireMind/
 │   ├── package.json        # Frontend dependencies & scripts
 │   └── vite.config.js      # Vite configuration
 └── README.md               # Root documentation (this file)
+
+
