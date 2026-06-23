@@ -38,7 +38,7 @@ HireMind is a cutting-edge web application designed to help job seekers supercha
 ### Backend
 *   **Runtime**: [Node.js](https://nodejs.org/)
 *   **Framework**: [Express.js](https://expressjs.com/)
-*   **Database**: [MongoDB](https://www.mongodb.com/) (using [Mongoose ORM](https://mongoosejs.com/))
+*   **Database**: [MongoDBAtlas](https://www.mongodb.com/products/platform/atlas-database/)
 *   **File Uploads**: [Multer](https://github.com/expressjs/multer)
 *   **PDF Parsing**: [pdf-parse](https://www.npmjs.com/package/pdf-parse)
 ### Artificial Intelligence
